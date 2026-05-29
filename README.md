@@ -1,10 +1,12 @@
 # py-calculator
-my first python sall project, a very simple calculator
-
-Features:
-- Addition
-- Subtraction
-- Multiplication
-- Division
-
-Built while learning Python fundamentals
+x = float(input())
+op = input()
+y = float(input())
+if op == "+":
+  print(x + y)
+elif op == "-":
+  pirnt(x - y)
+elif op == "*":
+  print(x * y)
+elif op == "/":
+  print(x / y)
