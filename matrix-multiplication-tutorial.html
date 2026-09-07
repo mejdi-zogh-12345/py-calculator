@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Multiplication, Step by Step</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --panel: #ffffff;
+    --ink: #1f2328;
+    --muted: #6b7280;
+    --border: #e2e2e0;
+    --accent: #2f6fed;
+    --accent-soft: #e8f0ff;
+    --good: #1a8a4a;
+    --good-soft: #e7f7ee;
+    --bad: #c8402c;
+    --bad-soft: #fdecea;
+    --radius: 10px;
+    font-size: 16px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  body { padding: 24px 16px 64px; }
+  .wrap { max-width: 880px; margin: 0 auto; }
+
+  header.app-header { margin-bottom: 20px; }
+  header.app-header h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  header.app-header p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+  nav.tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  nav.tabs button {
+    appearance: none;
+    border: none;
+    background: none;
+    padding: 10px 16px;
+    font-size: 0.95rem;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  nav.tabs button.active {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  h3 { font-size: 0.95rem; margin: 0 0 8px; color: var(--muted); font-weight: 600; }
+
+  /* ---------- Setup form ---------- */
+  .dims-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-bottom: 18px;
+  }
+  .dims-group { display: flex; flex-direction: column; gap: 6px; }
+  .dims-group label { font-size: 0.8rem; color: var(--muted); }
+  .dims-inline { display: flex; align-items: center; gap: 6px; }
+  .dims-inline select {
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 0.95rem;
+    background: var(--panel);
+  }
+  .dims-inline .x { color: var(--muted); }
+
+  .validation-msg {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .validation-msg.error {
+    display: block;
+    background: var(--bad-soft);
+    color: var(--bad);
+  }
+  .validation-msg.ok {
+    display: block;
+    background: var(--good-soft);
+    color: var(--good);
+  }
+
+  .matrices-input-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .matrix-label { font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+
+  .bracketed {
+    display: inline-grid;
+    grid-template-columns: 10px auto 10px;
+    align-items: stretch;
+  }
+  .bracket { border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); }
+  .bracket.left { border-left: 3px solid var(--ink); border-top-left-radius: 5px; border-bottom-left-radius: 5px; }
+  .bracket.right { border-right: 3px solid var(--ink); border-top-right-radius: 5px; border-bottom-right-radius: 5px; }
+  .bracket-mid { padding: 4px; }
+
+  .grid-table { border-collapse: collapse; }
+  .grid-table td { padding: 3px; }
+  .cell-input {
+    width: 46px;
+    padding: 6px 4px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 0.95rem;
+    font-family: inherit;
+  }
+  .cell-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .setup-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  button.btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 9px 16px;
+    border-radius: 7px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  button.btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  button.btn.primary:hover:not(:disabled) { opacity: 0.92; color: #fff; }
+
+  /* ---------- Walkthrough ---------- */
+  .wt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .wt-progress { font-size: 0.85rem; color: var(--muted); }
+
+  .matrices-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .op-symbol { font-size: 1.4rem; color: var(--muted); padding: 0 2px; }
+
+  .static-cell {
+    width: 42px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    border-radius: 5px;
+    transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+  }
+  .static-cell.hl {
+    background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px var(--accent);
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .result-cell {
+    width: 42px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    border-radius: 5px;
+    color: var(--muted);
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .result-cell.active {
+    box-shadow: inset 0 0 0 2px var(--accent);
+    color: var(--accent);
+  }
+  .result-cell.filled { color: var(--ink); font-weight: 600; }
+  .result-cell.just-filled {
+    animation: pop 0.45s ease;
+    background: var(--accent-soft);
+  }
+  @keyframes pop {
+    0% { transform: scale(0.6); background: var(--accent-soft); }
+    60% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+
+  .sumbar {
+    background: #f6f7f9;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    min-height: 74px;
+    margin-bottom: 16px;
+  }
+  .sumbar-label { font-size: 0.82rem; color: var(--muted); margin-bottom: 8px; }
+  .sumbar-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.98rem; }
+  .chip {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 9px;
+    white-space: nowrap;
+  }
+  .chip-new { animation: chipIn 0.35s ease; border-color: var(--accent); background: var(--accent-soft); }
+  @keyframes chipIn {
+    0% { transform: translateY(-4px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  .chip-placeholder { color: var(--muted); }
+  .plus { color: var(--muted); }
+  .equals { color: var(--muted); margin-left: 2px; }
+  .total {
+    font-weight: 700;
+    color: var(--good);
+    background: var(--good-soft);
+    padding: 5px 10px;
+    border-radius: 6px;
+  }
+
+  .controls-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .controls-row .spacer { flex: 1; }
+  select.speed-select {
+    padding: 7px 8px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    background: var(--panel);
+  }
+
+  .recap-box {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-top: 16px;
+  }
+  .recap-box h3 { color: var(--accent); margin-bottom: 10px; }
+  .recap-box ul { margin: 0; padding-left: 20px; }
+  .recap-box li { margin-bottom: 8px; line-height: 1.45; font-size: 0.92rem; }
+  .recap-actions { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ---------- Practice ---------- */
+  .practice-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .practice-progress { font-size: 0.85rem; color: var(--muted); }
+  .practice-score { font-size: 0.85rem; color: var(--muted); }
+
+  .answer-input {
+    width: 46px;
+    padding: 6px 4px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 0.95rem;
+    font-family: inherit;
+  }
+  .answer-input.correct { border-color: var(--good); background: var(--good-soft); }
+  .answer-input.incorrect { border-color: var(--bad); background: var(--bad-soft); }
+
+  .practice-feedback {
+    margin-top: 12px;
+    font-size: 0.9rem;
+    padding: 10px 12px;
+    border-radius: 7px;
+    display: none;
+  }
+  .practice-feedback.show.good { display: block; background: var(--good-soft); color: var(--good); }
+  .practice-feedback.show.bad { display: block; background: var(--bad-soft); color: var(--bad); }
+
+  .practice-actions { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .hidden { display: none !important; }
+
+  footer.note {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 28px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app-header">
+    <h1>Matrix Multiplication, Step by Step</h1>
+    <p>Build your own matrices, watch each entry get computed term by term, then test yourself.</p>
+  </header>
+
+  <nav class="tabs">
+    <button id="tabLearnBtn" class="active" type="button">Learn</button>
+    <button id="tabPracticeBtn" type="button">Practice</button>
+  </nav>
+
+  <!-- ================= LEARN TAB ================= -->
+  <section id="learnTab">
+
+    <!-- ---- Setup ---- -->
+    <div id="setupPanel" class="panel">
+      <h2>1. Choose your matrices</h2>
+
+      <div class="dims-row">
+        <div class="dims-group">
+          <label>Matrix A size (rows &times; cols)</label>
+          <div class="dims-inline">
+            <select id="rA"></select>
+            <span class="x">&times;</span>
+            <select id="cA"></select>
+          </div>
+        </div>
+        <div class="dims-group">
+          <label>Matrix B size (rows &times; cols)</label>
+          <div class="dims-inline">
+            <select id="rB"></select>
+            <span class="x">&times;</span>
+            <select id="cB"></select>
+          </div>
+        </div>
+      </div>
+
+      <div id="validationMsg" class="validation-msg"></div>
+
+      <div class="matrices-input-row">
+        <div>
+          <div class="matrix-label">Matrix A</div>
+          <div id="matrixAInputs"></div>
+        </div>
+        <div>
+          <div class="matrix-label">Matrix B</div>
+          <div id="matrixBInputs"></div>
+        </div>
+      </div>
+
+      <div class="setup-actions">
+        <button class="btn" id="randomizeBtn" type="button">Randomize values</button>
+        <button class="btn primary" id="startBtn" type="button">Start walkthrough</button>
+      </div>
+    </div>
+
+    <!-- ---- Walkthrough ---- -->
+    <div id="walkPanel" class="panel hidden">
+      <div class="wt-header">
+        <h2 style="margin:0;">2. Watch it get computed</h2>
+        <div class="wt-progress" id="wtProgress"></div>
+      </div>
+
+      <div class="matrices-row" id="matricesRow"></div>
+
+      <div class="sumbar" id="sumbar"></div>
+
+      <div class="controls-row">
+        <button class="btn" id="prevBtn" type="button">&larr; Previous step</button>
+        <button class="btn" id="nextBtn" type="button">Next step &rarr;</button>
+        <button class="btn" id="playBtn" type="button">Auto-play</button>
+        <select class="speed-select" id="speedSelect">
+          <option value="1600">Slow</option>
+          <option value="1000" selected>Normal</option>
+          <option value="550">Fast</option>
+        </select>
+        <span class="spacer"></span>
+        <button class="btn" id="restartBtn" type="button">Restart</button>
+        <button class="btn" id="editBtn" type="button">Edit matrices</button>
+      </div>
+
+      <div id="recapBox" class="recap-box hidden"></div>
+    </div>
+
+  </section>
+
+  <!-- ================= PRACTICE TAB ================= -->
+  <section id="practiceTab" class="hidden">
+    <div class="panel">
+      <div class="practice-topbar">
+        <h2 style="margin:0;">Practice problems</h2>
+        <div>
+          <div class="practice-progress" id="practiceProgress"></div>
+          <div class="practice-score" id="practiceScore"></div>
+        </div>
+      </div>
+
+      <div class="matrices-row" id="practiceMatricesRow"></div>
+
+      <div class="practice-feedback" id="practiceFeedback"></div>
+
+      <div class="practice-actions">
+        <button class="btn primary" id="checkBtn" type="button">Check answer</button>
+        <button class="btn" id="newNumbersBtn" type="button">New numbers</button>
+        <button class="btn" id="nextProblemBtn" type="button" disabled>Next problem &rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="note">Single-file study tool &middot; no data leaves your browser</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ============================================================
+  // Helpers
+  // ============================================================
+  function qs(id) { return document.getElementById(id); }
+  function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function makeMatrix(rows, cols, fill) {
+    const m = [];
+    for (let r = 0; r < rows; r++) {
+      const row = [];
+      for (let c = 0; c < cols; c++) row.push(fill(r, c));
+      m.push(row);
+    }
+    return m;
+  }
+  function randomMatrix(rows, cols) {
+    return makeMatrix(rows, cols, () => randInt(-6, 9));
+  }
+  function multiply(A, B) {
+    const p = A.length, n = A[0].length, q = B[0].length;
+    return makeMatrix(p, q, (i, j) => {
+      let sum = 0;
+      for (let k = 0; k < n; k++) sum += A[i][k] * B[k][j];
+      return sum;
+    });
+  }
+
+  // ============================================================
+  // Tabs
+  // ============================================================
+  const tabLearnBtn = qs('tabLearnBtn');
+  const tabPracticeBtn = qs('tabPracticeBtn');
+  const learnTab = qs('learnTab');
+  const practiceTab = qs('practiceTab');
+
+  tabLearnBtn.addEventListener('click', () => switchTab('learn'));
+  tabPracticeBtn.addEventListener('click', () => switchTab('practice'));
+
+  function switchTab(which) {
+    const isLearn = which === 'learn';
+    learnTab.classList.toggle('hidden', !isLearn);
+    practiceTab.classList.toggle('hidden', isLearn);
+    tabLearnBtn.classList.toggle('active', isLearn);
+    tabPracticeBtn.classList.toggle('active', !isLearn);
+    if (!isLearn) stopAutoplay();
+  }
+
+  // ============================================================
+  // Setup panel
+  // ============================================================
+  const rASel = qs('rA'), cASel = qs('cA'), rBSel = qs('rB'), cBSel = qs('cB');
+  const validationMsg = qs('validationMsg');
+  const matrixAInputsEl = qs('matrixAInputs');
+  const matrixBInputsEl = qs('matrixBInputs');
+  const startBtn = qs('startBtn');
+  const randomizeBtn = qs('randomizeBtn');
+
+  const DIM_OPTIONS = [1, 2, 3, 4];
+  [rASel, cASel, rBSel, cBSel].forEach((sel, idx) => {
+    DIM_OPTIONS.forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n;
+      opt.textContent = n;
+      sel.appendChild(opt);
+    });
+    sel.value = 2;
+  });
+
+  let matrixAValues = randomMatrix(2, 2);
+  let matrixBValues = randomMatrix(2, 2);
+
+  function currentDims() {
+    return {
+      rA: parseInt(rASel.value, 10),
+      cA: parseInt(cASel.value, 10),
+      rB: parseInt(rBSel.value, 10),
+      cB: parseInt(cBSel.value, 10),
+    };
+  }
+
+  function buildBracketedGrid(container, rows, cols, values, editable) {
+    container.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'bracketed';
+
+    const left = document.createElement('div');
+    left.className = 'bracket left';
+    const right = document.createElement('div');
+    right.className = 'bracket right';
+
+    const mid = document.createElement('div');
+    mid.className = 'bracket-mid';
+
+    const table = document.createElement('table');
+    table.className = 'grid-table';
+    for (let r = 0; r < rows; r++) {
+      const tr = document.createElement('tr');
+      for (let c = 0; c < cols; c++) {
+        const td = document.createElement('td');
+        if (editable) {
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.className = 'cell-input';
+          input.value = values[r][c];
+          input.dataset.row = r;
+          input.dataset.col = c;
+          td.appendChild(input);
+        } else {
+          const div = document.createElement('div');
+          div.className = 'static-cell';
+          div.textContent = values[r][c];
+          div.dataset.row = r;
+          div.dataset.col = c;
+          td.appendChild(div);
+        }
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+    mid.appendChild(table);
+    wrap.appendChild(left);
+    wrap.appendChild(mid);
+    wrap.appendChild(right);
+    container.appendChild(wrap);
+    return table;
+  }
+
+  function renderSetupInputs() {
+    const { rA, cA, rB, cB } = currentDims();
+    if (matrixAValues.length !== rA || matrixAValues[0].length !== cA) {
+      matrixAValues = randomMatrix(rA, cA);
+    }
+    if (matrixBValues.length !== rB || matrixBValues[0].length !== cB) {
+      matrixBValues = randomMatrix(rB, cB);
+    }
+    buildBracketedGrid(matrixAInputsEl, rA, cA, matrixAValues, true);
+    buildBracketedGrid(matrixBInputsEl, rB, cB, matrixBValues, true);
+    validateDims();
+  }
+
+  function validateDims() {
+    const { cA, rB } = currentDims();
+    if (cA !== rB) {
+      validationMsg.className = 'validation-msg error';
+      validationMsg.textContent =
+        'Not compatible: Matrix A has ' + cA + ' column(s) but Matrix B has ' + rB +
+        ' row(s). The number of columns in A must equal the number of rows in B.';
+      startBtn.disabled = true;
+      return false;
+    } else {
+      validationMsg.className = 'validation-msg ok';
+      validationMsg.textContent =
+        'Compatible: result will be a ' + currentDims().rA + '×' + currentDims().cB + ' matrix.';
+      startBtn.disabled = false;
+      return true;
+    }
+  }
+
+  [rASel, cASel, rBSel, cBSel].forEach(sel => sel.addEventListener('change', renderSetupInputs));
+
+  randomizeBtn.addEventListener('click', () => {
+    const { rA, cA, rB, cB } = currentDims();
+    matrixAValues = randomMatrix(rA, cA);
+    matrixBValues = randomMatrix(rB, cB);
+    renderSetupInputs();
+  });
+
+  function readMatrixFromInputs(container, rows, cols) {
+    const m = makeMatrix(rows, cols, () => 0);
+    container.querySelectorAll('.cell-input').forEach(inp => {
+      const r = parseInt(inp.dataset.row, 10);
+      const c = parseInt(inp.dataset.col, 10);
+      const v = parseFloat(inp.value);
+      m[r][c] = isNaN(v) ? 0 : v;
+    });
+    return m;
+  }
+
+  renderSetupInputs();
+
+  // ============================================================
+  // Walkthrough
+  // ============================================================
+  const setupPanel = qs('setupPanel');
+  const walkPanel = qs('walkPanel');
+  const matricesRow = qs('matricesRow');
+  const sumbarEl = qs('sumbar');
+  const wtProgress = qs('wtProgress');
+  const prevBtn = qs('prevBtn');
+  const nextBtn = qs('nextBtn');
+  const playBtn = qs('playBtn');
+  const speedSelect = qs('speedSelect');
+  const restartBtn = qs('restartBtn');
+  const editBtn = qs('editBtn');
+  const recapBox = qs('recapBox');
+
+  let wt = null; // { A, B, C, steps, index, playing, timer }
+
+  function buildSteps(A, B) {
+    const p = A.length, n = A[0].length, q = B[0].length;
+    const steps = [];
+    for (let i = 0; i < p; i++) {
+      for (let j = 0; j < q; j++) {
+        steps.push({ type: 'highlight', i: i, j: j, terms: [] });
+        const terms = [];
+        let running = 0;
+        for (let k = 0; k < n; k++) {
+          const a = A[i][k], b = B[k][j], prod = a * b;
+          running += prod;
+          terms.push({ k: k, a: a, b: b, prod: prod });
+          steps.push({ type: 'term', i: i, j: j, terms: terms.slice(), running: running });
+        }
+        steps.push({ type: 'commit', i: i, j: j, terms: terms.slice(), total: running });
+      }
+    }
+    steps.push({ type: 'recap' });
+    return steps;
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (!validateDims()) return;
+    const { rA, cA, rB, cB } = currentDims();
+    const A = readMatrixFromInputs(matrixAInputsEl, rA, cA);
+    const B = readMatrixFromInputs(matrixBInputsEl, rB, cB);
+    wt = {
+      A: A, B: B,
+      p: A.length, n: A[0].length, q: B[0].length,
+      steps: buildSteps(A, B),
+      index: 0,
+      playing: false,
+      timer: null,
+      cellA: null, cellB: null, cellC: null,
+    };
+    setupPanel.classList.add('hidden');
+    walkPanel.classList.remove('hidden');
+    renderMatricesShell();
+    renderWalkStep();
+  });
+
+  editBtn.addEventListener('click', () => {
+    stopAutoplay();
+    walkPanel.classList.add('hidden');
+    setupPanel.classList.remove('hidden');
+  });
+
+  function renderMatricesShell() {
+    matricesRow.innerHTML = '';
+
+    const aWrap = document.createElement('div');
+    const aLabel = document.createElement('div');
+    aLabel.className = 'matrix-label';
+    aLabel.textContent = 'A';
+    aWrap.appendChild(aLabel);
+    const aContainer = document.createElement('div');
+    aWrap.appendChild(aContainer);
+
+    const times = document.createElement('div');
+    times.className = 'op-symbol';
+    times.textContent = '×';
+
+    const bWrap = document.createElement('div');
+    const bLabel = document.createElement('div');
+    bLabel.className = 'matrix-label';
+    bLabel.textContent = 'B';
+    bWrap.appendChild(bLabel);
+    const bContainer = document.createElement('div');
+    bWrap.appendChild(bContainer);
+
+    const equals = document.createElement('div');
+    equals.className = 'op-symbol';
+    equals.textContent = '=';
+
+    const cWrap = document.createElement('div');
+    const cLabel = document.createElement('div');
+    cLabel.className = 'matrix-label';
+    cLabel.textContent = 'C';
+    cWrap.appendChild(cLabel);
+    const cContainer = document.createElement('div');
+    cWrap.appendChild(cContainer);
+
+    matricesRow.appendChild(aWrap);
+    matricesRow.appendChild(times);
+    matricesRow.appendChild(bWrap);
+    matricesRow.appendChild(equals);
+    matricesRow.appendChild(cWrap);
+
+    wt.tableA = buildBracketedGrid(aContainer, wt.p, wt.n, wt.A, false);
+    wt.tableB = buildBracketedGrid(bContainer, wt.n, wt.q, wt.B, false);
+
+    // Result grid: build blank placeholders manually (not editable, not from a values matrix)
+    const blank = makeMatrix(wt.p, wt.q, () => '');
+    wt.tableC = buildResultGrid(cContainer, wt.p, wt.q);
+  }
+
+  function buildResultGrid(container, rows, cols) {
+    container.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'bracketed';
+    const left = document.createElement('div');
+    left.className = 'bracket left';
+    const right = document.createElement('div');
+    right.className = 'bracket right';
+    const mid = document.createElement('div');
+    mid.className = 'bracket-mid';
+    const table = document.createElement('table');
+    table.className = 'grid-table';
+    for (let r = 0; r < rows; r++) {
+      const tr = document.createElement('tr');
+      for (let c = 0; c < cols; c++) {
+        const td = document.createElement('td');
+        const div = document.createElement('div');
+        div.className = 'result-cell';
+        div.dataset.row = r;
+        div.dataset.col = c;
+        td.appendChild(div);
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+    mid.appendChild(table);
+    wrap.appendChild(left);
+    wrap.appendChild(mid);
+    wrap.appendChild(right);
+    container.appendChild(wrap);
+    return table;
+  }
+
+  function clearHighlights() {
+    wt.tableA.querySelectorAll('.static-cell').forEach(el => el.classList.remove('hl'));
+    wt.tableB.querySelectorAll('.static-cell').forEach(el => el.classList.remove('hl'));
+    wt.tableC.querySelectorAll('.result-cell').forEach(el => {
+      el.classList.remove('active', 'just-filled');
+    });
+  }
+
+  function renderWalkStep() {
+    const step = wt.steps[wt.index];
+    clearHighlights();
+
+    wtProgress.textContent = 'Step ' + (wt.index + 1) + ' of ' + wt.steps.length;
+
+    if (step.type === 'recap') {
+      sumbarEl.innerHTML = '<div class="sumbar-label">All done!</div><div class="sumbar-chips"><span class="chip-placeholder">See the recap below.</span></div>';
+      showRecap();
+      nextBtn.disabled = true;
+      prevBtn.disabled = false;
+      stopAutoplay();
+      return;
+    }
+    recapBox.classList.add('hidden');
+    nextBtn.disabled = false;
+    prevBtn.disabled = wt.index === 0;
+
+    const i = step.i, j = step.j;
+
+    wt.tableA.querySelectorAll('.static-cell').forEach(el => {
+      if (parseInt(el.dataset.row, 10) === i) el.classList.add('hl');
+    });
+    wt.tableB.querySelectorAll('.static-cell').forEach(el => {
+      if (parseInt(el.dataset.col, 10) === j) el.classList.add('hl');
+    });
+
+    // fill already-committed cells
+    for (let s = 0; s <= wt.index; s++) {
+      const st = wt.steps[s];
+      if (st.type === 'commit') {
+        const cellEl = wt.tableC.querySelector('.result-cell[data-row="' + st.i + '"][data-col="' + st.j + '"]');
+        cellEl.textContent = st.total;
+        cellEl.classList.add('filled');
+        if (s === wt.index) cellEl.classList.add('just-filled');
+      }
+    }
+    const activeCellEl = wt.tableC.querySelector('.result-cell[data-row="' + i + '"][data-col="' + j + '"]');
+    if (step.type !== 'commit') {
+      activeCellEl.classList.add('active');
+      if (!activeCellEl.classList.contains('filled')) activeCellEl.textContent = '?';
+    }
+
+    // sum bar
+    const chipsHtml = step.terms.length
+      ? step.terms.map((t, idx) => {
+          const isNew = step.type === 'term' && idx === step.terms.length - 1;
+          return '<span class="chip' + (isNew ? ' chip-new' : '') + '">' + t.a + ' × ' + t.b + ' = ' + t.prod + '</span>';
+        }).join('<span class="plus">+</span>')
+      : '<span class="chip-placeholder">building the sum&hellip;</span>';
+
+    let totalHtml = '';
+    if (step.type === 'commit') {
+      totalHtml = '<span class="equals">=</span><span class="total">' + step.total + '</span>';
+    }
+
+    sumbarEl.innerHTML =
+      '<div class="sumbar-label">C<sub>' + (i + 1) + (j + 1) + '</sub> &nbsp;=&nbsp; row ' + (i + 1) +
+      ' of A &middot; column ' + (j + 1) + ' of B</div>' +
+      '<div class="sumbar-chips">' + chipsHtml + totalHtml + '</div>';
+  }
+
+  function showRecap() {
+    const p = wt.p, n = wt.n, q = wt.q;
+    recapBox.classList.remove('hidden');
+    recapBox.innerHTML =
+      '<h3>What just happened</h3>' +
+      '<ul>' +
+      '<li>You multiplied a ' + p + '×' + n + ' matrix by a ' + n + '×' + q +
+      ' matrix to get a ' + p + '×' + q + ' result. The "inner" dimension (' + n +
+      ') has to match between the two matrices &mdash; that\'s the axis being combined and summed away.</li>' +
+      '<li>Each entry of the result is a <strong>dot product</strong>: it pairs up a row from A with a column from B, multiplies matching positions, and adds them up. It\'s a measure of how much that row and that column "line up".</li>' +
+      '<li>The shape of the result tells a story: it has as many rows as A (A\'s "inputs") and as many columns as B (B\'s "outputs"). Multiplying by a matrix is really applying a transformation, and chaining A and B chains two transformations into one.</li>' +
+      '<li>Order matters. A×B and B×A generally combine completely different rows and columns (and may not even both be defined) &mdash; matrix multiplication is <strong>not commutative</strong>.</li>' +
+      '</ul>' +
+      '<div class="recap-actions">' +
+      '<button class="btn primary" id="recapNewBtn" type="button">Try new matrices</button>' +
+      '<button class="btn" id="recapPracticeBtn" type="button">Go to practice</button>' +
+      '</div>';
+    qs('recapNewBtn').addEventListener('click', () => {
+      stopAutoplay();
+      walkPanel.classList.add('hidden');
+      setupPanel.classList.remove('hidden');
+    });
+    qs('recapPracticeBtn').addEventListener('click', () => switchTab('practice'));
+  }
+
+  function goNext() {
+    if (!wt) return;
+    if (wt.index < wt.steps.length - 1) {
+      wt.index++;
+      renderWalkStep();
+    } else {
+      stopAutoplay();
+    }
+  }
+  function goPrev() {
+    if (!wt) return;
+    if (wt.index > 0) {
+      wt.index--;
+      renderWalkStep();
+    }
+  }
+
+  nextBtn.addEventListener('click', () => { stopAutoplay(); goNext(); });
+  prevBtn.addEventListener('click', () => { stopAutoplay(); goPrev(); });
+  restartBtn.addEventListener('click', () => {
+    stopAutoplay();
+    if (!wt) return;
+    wt.index = 0;
+    wt.tableC.querySelectorAll('.result-cell').forEach(el => {
+      el.textContent = '';
+      el.classList.remove('filled', 'active', 'just-filled');
+    });
+    renderWalkStep();
+  });
+
+  function stopAutoplay() {
+    if (wt && wt.timer) {
+      clearInterval(wt.timer);
+      wt.timer = null;
+    }
+    if (wt) wt.playing = false;
+    playBtn.textContent = 'Auto-play';
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (!wt) return;
+    if (wt.playing) {
+      stopAutoplay();
+      return;
+    }
+    wt.playing = true;
+    playBtn.textContent = 'Pause';
+    const delay = parseInt(speedSelect.value, 10);
+    wt.timer = setInterval(() => {
+      if (!wt || wt.index >= wt.steps.length - 1) {
+        stopAutoplay();
+        return;
+      }
+      goNext();
+    }, delay);
+  });
+
+  speedSelect.addEventListener('change', () => {
+    if (wt && wt.playing) {
+      clearInterval(wt.timer);
+      const delay = parseInt(speedSelect.value, 10);
+      wt.timer = setInterval(() => {
+        if (!wt || wt.index >= wt.steps.length - 1) {
+          stopAutoplay();
+          return;
+        }
+        goNext();
+      }, delay);
+    }
+  });
+
+  // ============================================================
+  // Practice
+  // ============================================================
+  const PRACTICE_DIMS = [
+    { rA: 2, cA: 2, rB: 2, cB: 2 },
+    { rA: 2, cA: 3, rB: 3, cB: 2 },
+    { rA: 3, cA: 2, rB: 2, cB: 3 },
+    { rA: 3, cA: 3, rB: 3, cB: 2 },
+  ];
+
+  const practiceMatricesRow = qs('practiceMatricesRow');
+  const practiceProgress = qs('practiceProgress');
+  const practiceScore = qs('practiceScore');
+  const practiceFeedback = qs('practiceFeedback');
+  const checkBtn = qs('checkBtn');
+  const newNumbersBtn = qs('newNumbersBtn');
+  const nextProblemBtn = qs('nextProblemBtn');
+
+  const practice = {
+    index: 0,
+    solved: [false, false, false, false],
+    A: null, B: null, answer: null,
+    inputTable: null,
+  };
+
+  function newPracticeProblem(idx) {
+    const d = PRACTICE_DIMS[idx];
+    practice.A = randomMatrix(d.rA, d.cA);
+    practice.B = randomMatrix(d.rB, d.cB);
+    practice.answer = multiply(practice.A, practice.B);
+  }
+
+  function renderPractice() {
+    const d = PRACTICE_DIMS[practice.index];
+    practiceProgress.textContent = 'Problem ' + (practice.index + 1) + ' of ' + PRACTICE_DIMS.length +
+      ' (' + d.rA + '×' + d.cA + ' times ' + d.rB + '×' + d.cB + ')';
+    const solvedCount = practice.solved.filter(Boolean).length;
+    practiceScore.textContent = 'Score: ' + solvedCount + ' / ' + PRACTICE_DIMS.length;
+
+    practiceMatricesRow.innerHTML = '';
+
+    const aWrap = document.createElement('div');
+    aWrap.innerHTML = '<div class="matrix-label">A</div>';
+    const aContainer = document.createElement('div');
+    aWrap.appendChild(aContainer);
+
+    const times = document.createElement('div');
+    times.className = 'op-symbol';
+    times.textContent = '×';
+
+    const bWrap = document.createElement('div');
+    bWrap.innerHTML = '<div class="matrix-label">B</div>';
+    const bContainer = document.createElement('div');
+    bWrap.appendChild(bContainer);
+
+    const equals = document.createElement('div');
+    equals.className = 'op-symbol';
+    equals.textContent = '=';
+
+    const cWrap = document.createElement('div');
+    cWrap.innerHTML = '<div class="matrix-label">Your answer</div>';
+    const cContainer = document.createElement('div');
+    cWrap.appendChild(cContainer);
+
+    practiceMatricesRow.appendChild(aWrap);
+    practiceMatricesRow.appendChild(times);
+    practiceMatricesRow.appendChild(bWrap);
+    practiceMatricesRow.appendChild(equals);
+    practiceMatricesRow.appendChild(cWrap);
+
+    buildBracketedGrid(aContainer, practice.A.length, practice.A[0].length, practice.A, false);
+    buildBracketedGrid(bContainer, practice.B.length, practice.B[0].length, practice.B, false);
+
+    const p = practice.answer.length, q = practice.answer[0].length;
+    const blank = makeMatrix(p, q, () => '');
+    practice.inputTable = buildAnswerGrid(cContainer, p, q);
+
+    practiceFeedback.className = 'practice-feedback';
+    practiceFeedback.textContent = '';
+    nextProblemBtn.disabled = true;
+  }
+
+  function buildAnswerGrid(container, rows, cols) {
+    container.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'bracketed';
+    const left = document.createElement('div');
+    left.className = 'bracket left';
+    const right = document.createElement('div');
+    right.className = 'bracket right';
+    const mid = document.createElement('div');
+    mid.className = 'bracket-mid';
+    const table = document.createElement('table');
+    table.className = 'grid-table';
+    for (let r = 0; r < rows; r++) {
+      const tr = document.createElement('tr');
+      for (let c = 0; c < cols; c++) {
+        const td = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'answer-input';
+        input.dataset.row = r;
+        input.dataset.col = c;
+        td.appendChild(input);
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+    mid.appendChild(table);
+    wrap.appendChild(left);
+    wrap.appendChild(mid);
+    wrap.appendChild(right);
+    container.appendChild(wrap);
+    return table;
+  }
+
+  checkBtn.addEventListener('click', () => {
+    const inputs = practice.inputTable.querySelectorAll('.answer-input');
+    let allCorrect = true;
+    inputs.forEach(inp => {
+      const r = parseInt(inp.dataset.row, 10);
+      const c = parseInt(inp.dataset.col, 10);
+      const expected = practice.answer[r][c];
+      const got = parseFloat(inp.value);
+      const correct = !isNaN(got) && got === expected;
+      inp.classList.remove('correct', 'incorrect');
+      inp.classList.add(correct ? 'correct' : 'incorrect');
+      if (!correct) allCorrect = false;
+    });
+
+    practiceFeedback.classList.add('show');
+    if (allCorrect) {
+      practiceFeedback.classList.remove('bad');
+      practiceFeedback.classList.add('good');
+      practiceFeedback.textContent = 'Correct! Every entry matches.';
+      practice.solved[practice.index] = true;
+      nextProblemBtn.disabled = practice.index >= PRACTICE_DIMS.length - 1;
+      renderPractice.__scoreOnly = true;
+      practiceScore.textContent = 'Score: ' + practice.solved.filter(Boolean).length + ' / ' + PRACTICE_DIMS.length;
+    } else {
+      practiceFeedback.classList.remove('good');
+      practiceFeedback.classList.add('bad');
+      practiceFeedback.textContent = 'Not quite yet — the highlighted cells are off. Recheck the row·column dot products and try again.';
+    }
+  });
+
+  newNumbersBtn.addEventListener('click', () => {
+    newPracticeProblem(practice.index);
+    renderPractice();
+  });
+
+  nextProblemBtn.addEventListener('click', () => {
+    if (practice.index < PRACTICE_DIMS.length - 1) {
+      practice.index++;
+      newPracticeProblem(practice.index);
+      renderPractice();
+    }
+  });
+
+  // init practice with first problem
+  newPracticeProblem(0);
+  renderPractice();
+
+})();
+</script>
+</body>
+</html>
