@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- page -->
+<title>Calculateur SOFA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+  :root {
+    --bg: #f1f5f6;
+    --surface: #ffffff;
+    --ink: #14232b;
+    --muted: #5b6d76;
+    --line: #d5dfe2;
+    --accent: #c22f3c;
+    --focus: #0f6f8c;
+    --s0: #d9e4e7;
+    --s1: #f2d98f;
+    --s2: #eeb163;
+    --s3: #e2764f;
+    --s4: #c22f3c;
+    --s-ink: #14232b;
+    --s-ink-strong: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0d161a;
+      --surface: #15222a;
+      --ink: #e3ecef;
+      --muted: #93a6ae;
+      --line: #2a3a42;
+      --accent: #f0636f;
+      --focus: #6cc4de;
+      --s0: #2a3a42;
+      --s1: #8a7431;
+      --s2: #a86a2a;
+      --s3: #b8502f;
+      --s4: #d63d4b;
+      --s-ink: #e3ecef;
+      --s-ink-strong: #ffffff;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0d161a;
+    --surface: #15222a;
+    --ink: #e3ecef;
+    --muted: #93a6ae;
+    --line: #2a3a42;
+    --accent: #f0636f;
+    --focus: #6cc4de;
+    --s0: #2a3a42;
+    --s1: #8a7431;
+    --s2: #a86a2a;
+    --s3: #b8502f;
+    --s4: #d63d4b;
+    --s-ink: #e3ecef;
+    --s-ink-strong: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    padding-inline: 16px;
+    padding-block: 32px 48px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; display: grid; gap: 24px; }
+
+  header { display: grid; gap: 4px; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  h1 { margin: 0; font: 600 clamp(30px, 6vw, 40px)/1.1 "Barlow Condensed", "Arial Narrow", sans-serif; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); max-width: 65ch; }
+
+  .summary {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px 20px; display: grid; gap: 14px;
+    grid-template-columns: auto 1fr; align-items: center;
+  }
+  .total { display: flex; align-items: baseline; gap: 6px; }
+  .total b { font: 600 clamp(56px, 12vw, 80px)/.9 "Barlow Condensed", "Arial Narrow", sans-serif; font-variant-numeric: tabular-nums; }
+  .total span { font: 500 24px/1 "Barlow Condensed", "Arial Narrow", sans-serif; color: var(--muted); }
+  .breakdown { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .cell { display: grid; gap: 2px; text-align: center; }
+  .cell small { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cell b {
+    display: block; border-radius: 6px; padding: 4px 0;
+    font: 600 22px/1.1 "Barlow Condensed", "Arial Narrow", sans-serif; font-variant-numeric: tabular-nums;
+    background: var(--s0); color: var(--s-ink);
+  }
+  .interp { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .interp strong { color: var(--ink); }
+
+  [data-score="1"] { background: var(--s1) !important; }
+  [data-score="2"] { background: var(--s2) !important; }
+  [data-score="3"] { background: var(--s3) !important; color: var(--s-ink-strong) !important; }
+  [data-score="4"] { background: var(--s4) !important; color: var(--s-ink-strong) !important; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+  .seg button { font: inherit; font-size: 14px; border: 0; background: transparent; color: var(--muted); padding: 5px 14px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .actions { display: flex; gap: 8px; }
+  .btn { font: inherit; font-size: 14px; cursor: pointer; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px; }
+  .btn:hover { border-color: var(--accent); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .toolbar .lbl { font-size: 13px; color: var(--muted); margin-right: 6px; }
+
+  .organs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .organ {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px 18px; display: grid; gap: 12px; align-content: start;
+  }
+  .organ-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .organ h2 { margin: 0; font-size: 16px; line-height: 1.2; }
+  .organ h2 small { display: block; font-weight: 400; font-size: 13px; color: var(--muted); }
+  .pts {
+    min-width: 44px; text-align: center; border-radius: 6px; padding: 2px 8px;
+    font: 600 26px/1.2 "Barlow Condensed", "Arial Narrow", sans-serif; font-variant-numeric: tabular-nums;
+    background: var(--s0); color: var(--s-ink);
+  }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+  .steps i { height: 5px; border-radius: 3px; background: var(--s0); }
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+  .f { display: grid; gap: 4px; }
+  .f label { font-size: 13px; font-weight: 600; }
+  .num { display: flex; align-items: baseline; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 2px 10px; background: var(--bg); }
+  .num:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .num input {
+    width: 100%; min-width: 0; border: 0; background: transparent; color: var(--ink); outline: none;
+    font: 600 22px/1.3 "Barlow Condensed", "Arial Narrow", sans-serif; font-variant-numeric: tabular-nums;
+  }
+  .num span { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .why { margin: 0; font-size: 13px; color: var(--muted); }
+
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px; }
+  summary { cursor: pointer; font-weight: 600; }
+  .table-wrap { overflow-x: auto; margin-top: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; min-width: 640px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+  footer { color: var(--muted); font-size: 13px; max-width: 75ch; }
+
+  @media (max-width: 560px) {
+    .summary { grid-template-columns: 1fr; }
+    .breakdown { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>
+<!-- /page -->
+</head>
+<body>
+<!-- page -->
+<main class="wrap">
+  <header>
+    <span class="eyebrow">Réanimation</span>
+    <h1>Score SOFA</h1>
+    <p>Sequential Organ Failure Assessment : 6 systèmes notés de 0 à 4, total sur 24. Utilisez la pire valeur des dernières 24 heures. Un champ vide compte comme normal (0).</p>
+  </header>
+
+  <section class="summary" aria-live="polite">
+    <div class="total"><b id="total">0</b><span>/ 24</span></div>
+    <div class="breakdown">
+      <div class="cell"><small>Resp.</small><b id="c-resp">0</b></div>
+      <div class="cell"><small>Coag.</small><b id="c-coag">0</b></div>
+      <div class="cell"><small>Foie</small><b id="c-liver">0</b></div>
+      <div class="cell"><small>Cardio</small><b id="c-cardio">0</b></div>
+      <div class="cell"><small>SNC</small><b id="c-cns">0</b></div>
+      <div class="cell"><small>Rein</small><b id="c-renal">0</b></div>
+    </div>
+    <p class="interp" id="interp"></p>
+  </section>
+
+  <div class="toolbar">
+    <div>
+      <span class="lbl">Bilirubine et créatinine en</span>
+      <span class="seg" role="group" aria-label="Unités">
+        <button type="button" id="u-si" aria-pressed="true">µmol/L</button>
+        <button type="button" id="u-us" aria-pressed="false">mg/dL</button>
+      </span>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="example">Charger l'exemple</button>
+      <button type="button" class="btn" id="reset">Effacer</button>
+    </div>
+  </div>
+
+  <section class="organs">
+    <article class="organ" data-organ="resp">
+      <div class="organ-head"><h2>Respiratoire<small>Rapport PaO₂/FiO₂</small></h2><span class="pts">0</span></div>
+      <div class="steps"><i></i><i></i><i></i><i></i></div>
+      <div class="fields">
+        <div class="f"><label for="pao2">PaO₂</label><div class="num"><input id="pao2" type="number" inputmode="decimal" min="0" step="1"><span>mmHg</span></div></div>
+        <div class="f"><label for="fio2">FiO₂</label><div class="num"><input id="fio2" type="number" inputmode="decimal" min="21" max="100" step="1"><span>%</span></div></div>
+      </div>
+      <label class="check"><input id="vent" type="checkbox"> Ventilation mécanique ou VNI</label>
+      <p class="why"></p>
+    </article>
+
+    <article class="organ" data-organ="coag">
+      <div class="organ-head"><h2>Coagulation<small>Plaquettes</small></h2><span class="pts">0</span></div>
+      <div class="steps"><i></i><i></i><i></i><i></i></div>
+      <div class="fields">
+        <div class="f"><label for="plt">Plaquettes</label><div class="num"><input id="plt" type="number" inputmode="decimal" min="0" step="1"><span>G/L</span></div></div>
+      </div>
+      <p class="why"></p>
+    </article>
+
+    <article class="organ" data-organ="liver">
+      <div class="organ-head"><h2>Hépatique<small>Bilirubine totale</small></h2><span class="pts">0</span></div>
+      <div class="steps"><i></i><i></i><i></i><i></i></div>
+      <div class="fields">
+        <div class="f"><label for="bili">Bilirubine</label><div class="num"><input id="bili" type="number" inputmode="decimal" min="0" step="any"><span class="u-lab">µmol/L</span></div></div>
+      </div>
+      <p class="why"></p>
+    </article>
+
+    <article class="organ" data-organ="cardio">
+      <div class="organ-head"><h2>Cardiovasculaire<small>PAM et amines (µg/kg/min)</small></h2><span class="pts">0</span></div>
+      <div class="steps"><i></i><i></i><i></i><i></i></div>
+      <div class="fields">
+        <div class="f"><label for="map">PAM</label><div class="num"><input id="map" type="number" inputmode="decimal" min="0" step="1"><span>mmHg</span></div></div>
+        <div class="f"><label for="nad">Noradrénaline</label><div class="num"><input id="nad" type="number" inputmode="decimal" min="0" step="0.01"></div></div>
+        <div class="f"><label for="adr">Adrénaline</label><div class="num"><input id="adr" type="number" inputmode="decimal" min="0" step="0.01"></div></div>
+        <div class="f"><label for="dopa">Dopamine</label><div class="num"><input id="dopa" type="number" inputmode="decimal" min="0" step="0.5"></div></div>
+      </div>
+      <label class="check"><input id="dobu" type="checkbox"> Dobutamine (toute dose)</label>
+      <p class="why"></p>
+    </article>
+
+    <article class="organ" data-organ="cns">
+      <div class="organ-head"><h2>Neurologique<small>Score de Glasgow</small></h2><span class="pts">0</span></div>
+      <div class="steps"><i></i><i></i><i></i><i></i></div>
+      <div class="fields">
+        <div class="f"><label for="gcs">Glasgow (3–15)</label><div class="num"><input id="gcs" type="number" inputmode="numeric" min="3" max="15" step="1"><span>pts</span></div></div>
+      </div>
+      <p class="why"></p>
+    </article>
+
+    <article class="organ" data-organ="renal">
+      <div class="organ-head"><h2>Rénal<small>Créatinine ou diurèse</small></h2><span class="pts">0</span></div>
+      <div class="steps"><i></i><i></i><i></i><i></i></div>
+      <div class="fields">
+        <div class="f"><label for="creat">Créatinine</label><div class="num"><input id="creat" type="number" inputmode="decimal" min="0" step="any"><span class="u-lab">µmol/L</span></div></div>
+        <div class="f"><label for="uo">Diurèse</label><div class="num"><input id="uo" type="number" inputmode="decimal" min="0" step="10"><span>mL/24 h</span></div></div>
+      </div>
+      <p class="why"></p>
+    </article>
+  </section>
+
+  <details>
+    <summary>Barème de référence (Vincent et al., 1996)</summary>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Système</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead>
+        <tbody>
+          <tr><td>PaO₂/FiO₂ (mmHg)</td><td>&lt; 400</td><td>&lt; 300</td><td>&lt; 200 + ventilation</td><td>&lt; 100 + ventilation</td></tr>
+          <tr><td>Plaquettes (G/L)</td><td>&lt; 150</td><td>&lt; 100</td><td>&lt; 50</td><td>&lt; 20</td></tr>
+          <tr><td>Bilirubine µmol/L (mg/dL)</td><td>20–32 (1,2–1,9)</td><td>33–101 (2,0–5,9)</td><td>102–204 (6,0–11,9)</td><td>&gt; 204 (≥ 12)</td></tr>
+          <tr><td>Cardiovasculaire</td><td>PAM &lt; 70 mmHg</td><td>Dopamine ≤ 5 ou dobutamine</td><td>Dopamine &gt; 5, adré ≤ 0,1 ou noradré ≤ 0,1</td><td>Dopamine &gt; 15, adré &gt; 0,1 ou noradré &gt; 0,1</td></tr>
+          <tr><td>Glasgow</td><td>13–14</td><td>10–12</td><td>6–9</td><td>&lt; 6</td></tr>
+          <tr><td>Créatinine µmol/L (mg/dL) ou diurèse</td><td>110–170 (1,2–1,9)</td><td>171–299 (2,0–3,4)</td><td>300–440 (3,5–4,9) ou &lt; 500 mL/j</td><td>&gt; 440 (≥ 5,0) ou &lt; 200 mL/j</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <footer>Outil pédagogique. Doses d'amines administrées pendant au moins 1 heure. Chez un patient sédaté, utiliser le Glasgow estimé avant sédation. Les estimations de mortalité sont indicatives (Ferreira et al., JAMA 2001) et ne remplacent pas le jugement clinique.</footer>
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var units = "si";
+  var EXAMPLE = { pao2: 80, fio2: 50, vent: true, plt: 90, bili: 25, map: 65, nad: 0.08, adr: "", dopa: "", dobu: false, gcs: 13, creat: 180, uo: 800 };
+  var NUM_IDS = ["pao2", "fio2", "plt", "bili", "map", "nad", "adr", "dopa", "gcs", "creat", "uo"];
+
+  function val(id) {
+    var raw = String($(id).value).trim().replace(",", ".");
+    if (raw === "") return null;
+    var n = parseFloat(raw);
+    return isFinite(n) ? n : null;
+  }
+  var fr = function (n, d) { return n.toLocaleString("fr-FR", { maximumFractionDigits: d }); };
+
+  // Chaque fonction renvoie [points, explication].
+  function resp() {
+    var p = val("pao2"), f = val("fio2"), v = $("vent").checked;
+    if (p === null || f === null) return [0, "Renseignez PaO₂ et FiO₂."];
+    if (f <= 0) return [0, "FiO₂ invalide."];
+    var ratio = p / (f > 1 ? f / 100 : f);
+    var s = ratio < 100 ? 4 : ratio < 200 ? 3 : ratio < 300 ? 2 : ratio < 400 ? 1 : 0;
+    var txt = "PaO₂/FiO₂ = " + fr(ratio, 0) + " mmHg.";
+    if (s > 2 && !v) { s = 2; txt += " Plafonné à 2 sans ventilation."; }
+    return [s, txt];
+  }
+  function coag() {
+    var x = val("plt");
+    if (x === null) return [0, "Non renseigné."];
+    return [x < 20 ? 4 : x < 50 ? 3 : x < 100 ? 2 : x < 150 ? 1 : 0, "Plaquettes " + fr(x, 0) + " G/L."];
+  }
+  function liver() {
+    var x = val("bili");
+    if (x === null) return [0, "Non renseigné."];
+    var t = units === "si" ? [20, 33, 102, 205] : [1.2, 2.0, 6.0, 12.0];
+    var s = x >= t[3] ? 4 : x >= t[2] ? 3 : x >= t[1] ? 2 : x >= t[0] ? 1 : 0;
+    return [s, "Bilirubine " + fr(x, 1) + (units === "si" ? " µmol/L." : " mg/dL.")];
+  }
+  function cardio() {
+    var m = val("map"), nad = val("nad") || 0, adr = val("adr") || 0, dopa = val("dopa") || 0, dobu = $("dobu").checked;
+    var s = 0, why = [];
+    if (m !== null && m < 70) { s = 1; why.push("PAM " + fr(m, 0) + " < 70 mmHg"); }
+    if ((dopa > 0 && dopa <= 5) || dobu) { s = Math.max(s, 2); }
+    if (dopa > 5 || (adr > 0 && adr <= 0.1) || (nad > 0 && nad <= 0.1)) { s = Math.max(s, 3); }
+    if (dopa > 15 || adr > 0.1 || nad > 0.1) { s = 4; }
+    if (nad) why.push("noradré " + fr(nad, 2));
+    if (adr) why.push("adré " + fr(adr, 2));
+    if (dopa) why.push("dopamine " + fr(dopa, 1));
+    if (dobu) why.push("dobutamine");
+    if (m === null && !why.length) return [0, "Non renseigné."];
+    if (!why.length) why.push("PAM " + fr(m, 0) + " mmHg, sans amine");
+    return [s, why.join(", ") + "."];
+  }
+  function cns() {
+    var g = val("gcs");
+    if (g === null) return [0, "Non renseigné."];
+    if (g < 3 || g > 15) return [0, "Le Glasgow va de 3 à 15."];
+    return [g < 6 ? 4 : g < 10 ? 3 : g < 13 ? 2 : g < 15 ? 1 : 0, "Glasgow " + fr(g, 0) + "."];
+  }
+  function renal() {
+    var c = val("creat"), uo = val("uo"), s = 0, why = [];
+    if (c !== null) {
+      var t = units === "si" ? [110, 171, 300, 441] : [1.2, 2.0, 3.5, 5.0];
+      s = c >= t[3] ? 4 : c >= t[2] ? 3 : c >= t[1] ? 2 : c >= t[0] ? 1 : 0;
+      why.push("créatinine " + fr(c, 1) + (units === "si" ? " µmol/L" : " mg/dL"));
+    }
+    if (uo !== null) {
+      if (uo < 200) s = 4; else if (uo < 500) s = Math.max(s, 3);
+      why.push("diurèse " + fr(uo, 0) + " mL/24 h");
+    }
+    if (!why.length) return [0, "Non renseigné."];
+    return [s, why.join(", ") + "."];
+  }
+
+  var ORGANS = { resp: resp, coag: coag, liver: liver, cardio: cardio, cns: cns, renal: renal };
+
+  function mortality(t) {
+    if (t <= 6) return "mortalité estimée < 10 %";
+    if (t <= 9) return "mortalité estimée 15 à 20 %";
+    if (t <= 12) return "mortalité estimée 40 à 50 %";
+    if (t <= 14) return "mortalité estimée 50 à 60 %";
+    if (t === 15) return "mortalité estimée > 80 %";
+    return "mortalité estimée > 90 %";
+  }
+
+  function render() {
+    var total = 0;
+    Object.keys(ORGANS).forEach(function (k) {
+      var r = ORGANS[k](), card = document.querySelector('[data-organ="' + k + '"]');
+      total += r[0];
+      var pts = card.querySelector(".pts");
+      pts.textContent = r[0]; pts.dataset.score = r[0];
+      card.querySelector(".why").textContent = r[1];
+      card.querySelectorAll(".steps i").forEach(function (i, idx) {
+        if (idx < r[0]) i.dataset.score = r[0]; else delete i.dataset.score;
+      });
+      var cell = $("c-" + k); cell.textContent = r[0]; cell.dataset.score = r[0];
+    });
+    $("total").textContent = total;
+    $("interp").innerHTML = "<strong>SOFA " + total + "</strong> : " + mortality(total) +
+      ". Une hausse de 2 points ou plus par rapport à l'état de base définit une dysfonction d'organe (Sepsis-3).";
+  }
+
+  function fill(data) {
+    NUM_IDS.forEach(function (id) { $(id).value = data[id] === undefined ? "" : data[id]; });
+    $("vent").checked = !!data.vent; $("dobu").checked = !!data.dobu;
+    render();
+  }
+
+  function setUnits(u) {
+    if (u === units) return;
+    var fb = u === "si" ? 17.1 : 1 / 17.1, fc = u === "si" ? 88.4 : 1 / 88.4;
+    var b = val("bili"), c = val("creat");
+    if (b !== null) $("bili").value = +(b * fb).toFixed(u === "si" ? 0 : 2);
+    if (c !== null) $("creat").value = +(c * fc).toFixed(u === "si" ? 0 : 2);
+    units = u;
+    $("u-si").setAttribute("aria-pressed", u === "si"); $("u-us").setAttribute("aria-pressed", u === "us");
+    document.querySelectorAll(".u-lab").forEach(function (s) { s.textContent = u === "si" ? "µmol/L" : "mg/dL"; });
+    render();
+  }
+
+  document.querySelectorAll(".organs input").forEach(function (el) { el.addEventListener("input", render); el.addEventListener("change", render); });
+  $("u-si").addEventListener("click", function () { setUnits("si"); });
+  $("u-us").addEventListener("click", function () { setUnits("us"); });
+  $("example").addEventListener("click", function () { setUnits("si"); fill(EXAMPLE); });
+  $("reset").addEventListener("click", function () { fill({}); });
+  fill(EXAMPLE);
+})();
+</script>
+<!-- /page -->
+</body>
+</html>
