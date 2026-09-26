@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- page -->
+<title>Calculateur de PAM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+  :root {
+    --bg: #f1f5f6;
+    --surface: #ffffff;
+    --ink: #14232b;
+    --muted: #5b6d76;
+    --line: #d5dfe2;
+    --accent: #c22f3c;
+    --accent-soft: #fbe7e9;
+    --low: #d08a12;
+    --ok: #1d8a5c;
+    --high: #c22f3c;
+    --track-low: #f3dfb8;
+    --track-ok: #cfe9dc;
+    --track-high: #f3c9cd;
+    --focus: #0f6f8c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0d161a;
+      --surface: #15222a;
+      --ink: #e3ecef;
+      --muted: #93a6ae;
+      --line: #2a3a42;
+      --accent: #f0636f;
+      --accent-soft: #3a1d22;
+      --low: #f0b44a;
+      --ok: #4cc48d;
+      --high: #f0636f;
+      --track-low: #4a3a1c;
+      --track-ok: #1c3d30;
+      --track-high: #4a2328;
+      --focus: #6cc4de;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0d161a;
+    --surface: #15222a;
+    --ink: #e3ecef;
+    --muted: #93a6ae;
+    --line: #2a3a42;
+    --accent: #f0636f;
+    --accent-soft: #3a1d22;
+    --low: #f0b44a;
+    --ok: #4cc48d;
+    --high: #f0636f;
+    --track-low: #4a3a1c;
+    --track-ok: #1c3d30;
+    --track-high: #4a2328;
+    --focus: #6cc4de;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    padding-inline: 16px;
+    padding-block: 32px 48px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 24px; }
+
+  header { display: grid; gap: 4px; }
+  .eyebrow {
+    font-size: 12px; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  h1 {
+    margin: 0; font: 600 clamp(30px, 6vw, 40px)/1.1 "Barlow Condensed", "Arial Narrow", sans-serif;
+    text-wrap: balance;
+  }
+  header p { margin: 0; color: var(--muted); max-width: 60ch; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    display: grid; gap: 20px;
+  }
+
+  .inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+  .field { display: grid; gap: 8px; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .field label { font-weight: 600; }
+  .field small { color: var(--muted); font-size: 13px; }
+  .num {
+    display: flex; align-items: baseline; gap: 6px;
+    border: 1px solid var(--line); border-radius: 8px; padding: 4px 12px;
+    background: var(--bg);
+  }
+  .num:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .num input {
+    width: 100%; min-width: 0; border: 0; background: transparent; color: var(--ink);
+    font: 600 34px/1.2 "Barlow Condensed", "Arial Narrow", sans-serif;
+    font-variant-numeric: tabular-nums; outline: none;
+  }
+  .num span { color: var(--muted); font-size: 14px; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  input[type="range"]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .readout {
+    display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: end;
+    border-top: 1px solid var(--line); padding-top: 20px;
+  }
+  .readout .label { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .map {
+    font: 600 clamp(64px, 16vw, 96px)/.9 "Barlow Condensed", "Arial Narrow", sans-serif;
+    font-variant-numeric: tabular-nums; color: var(--ink);
+  }
+  .map .unit { font-size: 22px; color: var(--muted); font-weight: 500; margin-left: 6px; }
+  .monitor {
+    font: 500 22px/1.2 "Barlow Condensed", "Arial Narrow", sans-serif;
+    font-variant-numeric: tabular-nums; color: var(--muted); text-align: right;
+  }
+  .monitor b { color: var(--ink); font-weight: 600; }
+  .pill {
+    justify-self: start; display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 12px; border-radius: 999px; font-weight: 600; font-size: 14px;
+    border: 1px solid currentColor;
+  }
+  .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .pill[data-state="low"] { color: var(--low); }
+  .pill[data-state="ok"] { color: var(--ok); }
+  .pill[data-state="high"] { color: var(--high); }
+  .pill[data-state="error"] { color: var(--muted); }
+  .note { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 14px; }
+
+  .scale { display: grid; gap: 6px; }
+  .track { position: relative; height: 14px; border-radius: 7px; display: flex; overflow: hidden; }
+  .track i { display: block; height: 100%; }
+  .marker {
+    position: absolute; top: -5px; width: 4px; height: 24px; border-radius: 2px;
+    background: var(--ink); transform: translateX(-2px); transition: left .25s ease;
+  }
+  .scale-wrap { position: relative; padding-top: 5px; }
+  .ticks { position: relative; height: 18px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ticks span { position: absolute; transform: translateX(-50%); }
+  .ticks span:first-child { transform: none; }
+  .ticks span:last-child { transform: translateX(-100%); }
+
+  .formula { display: grid; gap: 8px; }
+  .formula h2 { margin: 0; font-size: 15px; }
+  .formula code {
+    display: block; overflow-x: auto; white-space: nowrap;
+    font: 500 20px/1.4 "Barlow Condensed", "Arial Narrow", sans-serif;
+    font-variant-numeric: tabular-nums;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px;
+  }
+  .formula p { margin: 0; color: var(--muted); font-size: 14px; max-width: 65ch; }
+
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .presets span { font-size: 13px; color: var(--muted); margin-right: 4px; }
+  .presets button {
+    font: inherit; font-size: 14px; cursor: pointer; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px;
+  }
+  .presets button:hover { border-color: var(--accent); }
+  .presets button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  @media (max-width: 480px) {
+    .readout { grid-template-columns: 1fr; }
+    .readout .label[style], .monitor { text-align: left !important; }
+  }
+  footer { color: var(--muted); font-size: 13px; }
+  @media (prefers-reduced-motion: reduce) { .marker { transition: none; } }
+</style>
+<!-- /page -->
+</head>
+<body>
+<!-- page -->
+<main class="wrap">
+  <header>
+    <span class="eyebrow">Hémodynamique</span>
+    <h1>Pression artérielle moyenne</h1>
+    <p>Saisissez la pression systolique (PAS) et diastolique (PAD) pour obtenir la PAM, comme sur un moniteur de surveillance.</p>
+  </header>
+
+  <section class="panel" aria-label="Calcul">
+    <div class="inputs">
+      <div class="field">
+        <div class="field-head"><label for="pas">PAS · systolique</label><small>50 – 250</small></div>
+        <div class="num"><input id="pas" type="number" inputmode="decimal" min="1" max="300" step="1" value="120"><span>mmHg</span></div>
+        <input id="pas-range" type="range" min="50" max="250" step="1" value="120" aria-label="PAS (curseur)">
+      </div>
+      <div class="field">
+        <div class="field-head"><label for="pad">PAD · diastolique</label><small>30 – 150</small></div>
+        <div class="num"><input id="pad" type="number" inputmode="decimal" min="1" max="200" step="1" value="80"><span>mmHg</span></div>
+        <input id="pad-range" type="range" min="30" max="150" step="1" value="80" aria-label="PAD (curseur)">
+      </div>
+    </div>
+
+    <div class="presets" aria-label="Exemples">
+      <span>Exemples :</span>
+      <button type="button" data-pas="120" data-pad="80">120/80</button>
+      <button type="button" data-pas="90" data-pad="50">90/50</button>
+      <button type="button" data-pas="160" data-pad="100">160/100</button>
+    </div>
+
+    <div class="readout" aria-live="polite">
+      <span class="label">PAM</span>
+      <span class="label" style="text-align:right">Affichage moniteur</span>
+      <div class="map"><span id="map">93</span><span class="unit">mmHg</span></div>
+      <div class="monitor" id="monitor"><b>120/80</b> (93)</div>
+      <span class="pill" id="pill" data-state="ok">Normale</span>
+      <span class="monitor" id="pp">PP 40 mmHg</span>
+      <p class="note" id="note">Entre 65 et 100 mmHg : perfusion des organes généralement assurée.</p>
+    </div>
+
+    <div class="scale">
+      <div class="scale-wrap">
+        <div class="track" aria-hidden="true">
+          <i style="width:25%;background:var(--track-low)"></i>
+          <i style="width:35%;background:var(--track-ok)"></i>
+          <i style="width:40%;background:var(--track-high)"></i>
+        </div>
+        <div class="marker" id="marker" style="left:53.3%"></div>
+      </div>
+      <div class="ticks" aria-hidden="true">
+        <span style="left:0">40</span>
+        <span style="left:25%">65</span>
+        <span style="left:60%">100</span>
+        <span style="left:100%">140</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="formula">
+    <h2>Formule</h2>
+    <code id="formula">PAM = (PAS + 2 × PAD) / 3 = (120 + 2 × 80) / 3 = 93,3 mmHg</code>
+    <p>La diastole dure environ deux fois plus longtemps que la systole, d'où le poids double de la PAD. PP désigne la pression pulsée (PAS − PAD).</p>
+  </section>
+
+  <footer>Outil pédagogique. Les seuils affichés sont indicatifs et ne remplacent pas un avis médical.</footer>
+</main>
+
+<script>
+(function () {
+  var pas = document.getElementById("pas"), pad = document.getElementById("pad");
+  var pasR = document.getElementById("pas-range"), padR = document.getElementById("pad-range");
+  var out = {
+    map: document.getElementById("map"), monitor: document.getElementById("monitor"),
+    pill: document.getElementById("pill"), pp: document.getElementById("pp"),
+    note: document.getElementById("note"), marker: document.getElementById("marker"),
+    formula: document.getElementById("formula")
+  };
+  var fr = function (n, d) { return n.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }); };
+  var parse = function (el) { return parseFloat(String(el.value).replace(",", ".")); };
+
+  function calculerPam(s, d) { return (s + 2 * d) / 3; }
+
+  function render() {
+    var s = parse(pas), d = parse(pad);
+    var err = null;
+    if (!isFinite(s) || !isFinite(d)) err = "Entrez une valeur numérique pour la PAS et la PAD.";
+    else if (s <= 0 || d <= 0) err = "La PAS et la PAD doivent être strictement positives.";
+    else if (d >= s) err = "La PAS doit être supérieure à la PAD.";
+
+    if (err) {
+      out.map.textContent = "—";
+      out.monitor.innerHTML = "<b>—/—</b> (—)";
+      out.pp.textContent = "PP — mmHg";
+      out.pill.dataset.state = "error"; out.pill.textContent = "Saisie invalide";
+      out.note.textContent = err;
+      out.formula.textContent = "PAM = (PAS + 2 × PAD) / 3";
+      out.marker.hidden = true;
+      return;
+    }
+    var m = calculerPam(s, d);
+    out.map.textContent = fr(m, 1);
+    out.monitor.innerHTML = "<b>" + Math.round(s) + "/" + Math.round(d) + "</b> (" + Math.round(m) + ")";
+    out.pp.textContent = "PP " + fr(s - d, 0) + " mmHg";
+    var st, label, note;
+    if (m < 65) { st = "low"; label = "Basse"; note = "Sous 65 mmHg : risque d'hypoperfusion des organes."; }
+    else if (m <= 100) { st = "ok"; label = "Normale"; note = "Entre 65 et 100 mmHg : perfusion des organes généralement assurée."; }
+    else { st = "high"; label = "Élevée"; note = "Au-dessus de 100 mmHg : pression moyenne élevée."; }
+    out.pill.dataset.state = st; out.pill.textContent = label; out.note.textContent = note;
+    out.formula.textContent = "PAM = (PAS + 2 × PAD) / 3 = (" + fr(s, 0) + " + 2 × " + fr(d, 0) + ") / 3 = " + fr(m, 1) + " mmHg";
+    var pct = Math.max(0, Math.min(100, (m - 40) / 100 * 100));
+    out.marker.hidden = false; out.marker.style.left = pct + "%";
+  }
+
+  function link(num, range) {
+    num.addEventListener("input", function () { var v = parse(num); if (isFinite(v)) range.value = v; render(); });
+    range.addEventListener("input", function () { num.value = range.value; render(); });
+  }
+  link(pas, pasR); link(pad, padR);
+
+  document.querySelectorAll(".presets button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      pas.value = pasR.value = b.dataset.pas;
+      pad.value = padR.value = b.dataset.pad;
+      render();
+    });
+  });
+  render();
+})();
+</script>
+<!-- /page -->
+</body>
+</html>
